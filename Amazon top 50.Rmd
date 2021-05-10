@@ -1,0 +1,145 @@
+---
+title: "Amazon top 50"
+output: html_notebook
+---
+
+O relatório abaixo deriva de uma [Competição Kaggle](https://www.kaggle.com/sootersaalu/amazon-top-50-bestselling-books-2009-2019) que utilizei para testar os conhecimentos adquiridos em meus estudos recentes. Dessa forma, esta postagem tem por objetivo demonstrar habilidades básicas de interpretação, manipulação e visualização de dados em R, sem necessariamente buscar por insights significantes.\n
+O dataset consiste em dados estruturados, em formato 550x7, contendo informações dos 50 livros mais vendidos pela Amazon durante cada ano no intervalo de 2009 a 2019.
+
+```{r}
+# Setting work directory and verifying existing files
+setwd('C:/Users/pc/Documents/Kaggle/Amazon top 50 books')
+list.files()
+```
+
+```{r}
+# Loading libraries and dataset
+library('tidyverse')
+library('scales')
+bs <- read_csv("bestsellers with categories.csv")
+print(bs)
+```
+
+```{r}
+# Studying file structure 
+bs <- bs %>%
+  rename(User_Rating = `User Rating`)
+str(bs)
+summary(bs)
+```
+
+```{r}
+# Verifying missing data and duplicated values
+colSums(is.na(bs))
+bs %>% 
+  distinct() %>%
+  summary()
+summary(bs)
+```
+
+```{r}
+# Verifying data distribution
+bs %>%
+  select_if(is.numeric) %>%
+  summary() %>%
+  print()
+```
+
+```{r}
+# Verifying data correlation
+corr <- cor(select_if(bs, is.numeric), use = "pairwise")
+print(round(corr, 4))
+```
+
+```{r}
+# Verifying genre distribution
+bs %>%
+  count(Genre) %>%
+  mutate(Percent = (n / sum(n)) * 100) %>%
+  select(Genre, Percent)
+
+  ggplot(data = bs, aes(x = Genre)) +
+    geom_bar(mapping = aes(y = (..count..)/sum(..count..), fill = Genre)) +
+    scale_y_continuous(labels = scales::percent) +
+    ggtitle('Genre distribution') +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    ylab('Relative frequency')
+```
+
+```{r}
+# Verifying genre relevance for price
+bs %>%
+  group_by(Genre) %>%
+  summarise(avg_price = round(mean(Price), 2)) %>%
+  print()
+
+```
+
+```{r}
+# Grouping by authors
+bestAuthors <- bs %>%
+  group_by(Author) %>%
+  summarise(avg_rating = round(mean(User_Rating), 2),
+            avg_price = round(mean(Price), 2),
+            n_review = sum(Reviews),
+            total = n()) %>%
+  print()
+```
+
+```{r}
+# Top 10 expensive Authors
+bestAuthors %>%
+  arrange(desc(avg_price)) %>%
+  slice(1:10) %>%
+  select(Author, avg_price) %>%
+  ggplot(aes(x = Author, y = avg_price, fill = avg_price)) +
+  geom_bar(stat = 'identity', width = 0.8) +
+  geom_text(aes(label = avg_price), hjust = -0.35) +
+  ggtitle("Top 10 expensive authors") +
+  theme(plot.title = element_text(hjust = 0.35)) +
+  xlab('Authors') +
+  ylab('Avarage price') +
+  coord_flip()
+```
+
+```{r}
+# Most published authors
+bestAuthors %>%
+  arrange(desc(total)) %>%
+  filter(total >= 7) %>%
+  select(Author, total) %>%
+  ggplot(aes(x = Author, y = total, fill = total)) +
+  geom_bar(stat = "identity", width = 0.8) +
+  geom_text(aes(label = total), hjust = -0.15) +
+  ggtitle("Most published authors") +
+  theme(plot.title = element_text(hjust = 025)) +
+  ylab("Number of publications") +
+  coord_flip()
+```
+
+```{r}
+# Relating avg_rating x authors selling power
+bestAuthors %>%
+  ggplot(aes(x = avg_rating, y = total, color = avg_rating)) +
+  geom_point() 
+```
+
+```{r}
+# Top 10 most expensive books
+View(bs)
+
+bs %>%
+  arrange(desc(Price)) %>%
+  slice(1:10) %>%
+  print()
+```
+
+```{r}
+# Relating price x users rating
+bs %>%
+  ggplot(aes(x = User_Rating, y = Price, color = User_Rating)) +
+  geom_point()
+
+```
+
+Caso tenha gostado do resultado, entre em contato por meio do [linkedin](https://www.linkedin.com/in/kamauhussani/) ou [e-mail](https://kamauhussani.com/contato/). Abraços!
